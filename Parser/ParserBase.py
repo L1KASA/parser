@@ -1,8 +1,7 @@
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 
-# Абстрактный интерфейс для парсеров
-class Parser(ABC):
-    @abstractmethod
-    def parse(self, html):
+class Parser(Protocol):
+    def parse(self, html: str) -> dict[str, any]:
+        """ Парсит HTML-файл и возвращает словарь данных. """
         pass

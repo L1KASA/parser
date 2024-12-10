@@ -1,10 +1,7 @@
-# Реализация парсера для DNS Shop
 import re
-
 from bs4 import BeautifulSoup
-from Parser.ParserBase import Parser
 
-class ProductDetailParser(Parser):
+class ProductDetailParser:
     def parse(self, html) -> dict[str, any]:
         soup = BeautifulSoup(html, 'lxml')
 
@@ -17,7 +14,7 @@ class ProductDetailParser(Parser):
             .find('div')
         )
         price = price_tag.get_text(strip=True) if price_tag else "Цена не найдена"
-        price = float(price.replace(' BYN', '').replace(',', '.'))
+        price = float(price.replace(' BYN', '').replace(',', '.').replace(' ', ''))
 
 
         product_data = {"price": price}

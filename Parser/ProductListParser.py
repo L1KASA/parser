@@ -1,8 +1,6 @@
 from bs4 import BeautifulSoup
-from Parser.ParserBase import Parser
 
-class ProductListParser(Parser):
-
+class ProductListParser:
     def parse(self, html):
 
         soup = BeautifulSoup(html, 'lxml')

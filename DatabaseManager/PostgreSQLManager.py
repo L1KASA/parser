@@ -21,6 +21,8 @@ class PostgreSQLManager(DatabaseManagerBase):
         self.__cursor = None
         self._connect(host=host, port=port, database=database, user=user, password=password)
 
+        self._types = {"VARCHAR", "TEXT", "INTEGER", "FLOAT", "DATE", "BOOLEAN", "TIMESTAMP", "SERIAL"}
+
     def _connect(self, **kwargs):
         print("Параметры подключения:", kwargs)
         self.__connection = psycopg2.connect(**kwargs)
@@ -32,14 +34,30 @@ class PostgreSQLManager(DatabaseManagerBase):
         :param table_name: Название таблицы
         :param columns: Словарь с определением столбцов (ключ: атрибут, значение: тип данных)
         """
+        try:
+            if not table_name.isidentifier():
+                raise ValueError(f"Недопустимое название таблицы: {table_name}")
 
-        create_query = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            id SERIAL PRIMARY KEY,
-            {', '.join(f"{col} {dtype}" for col, dtype in columns.items())})"""
+            for column_name, column_type in columns.items():
+                if not column_name.isidentifier():
+                    raise ValueError(f"Недопустимое имя столбца: {column_name}")
 
-        self.__cursor.execute(create_query)
-        self.__connection.commit()
+
+                if column_type.upper() in self._types:
+                    raise ValueError(f"Недопустимый тип данных '{column_type}' для столбца '{column_name}'")
+
+            create_query = f"""
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                id SERIAL PRIMARY KEY,
+                {', '.join(f"{col} {dtype}" for col, dtype in columns.items())})"""
+
+            self.__cursor.execute(create_query)
+            self.__connection.commit()
+
+            print(f"Таблица '{table_name}' успешно создана.")
+        except Exception as e:
+            self.__connection.rollback()
+            print(f"Ошибка при создании таблицы '{table_name}': {e}")
 
     def insert_data(self, table_name: str, data: dict[str, any]):
         """
@@ -54,36 +72,6 @@ class PostgreSQLManager(DatabaseManagerBase):
 
         self.__cursor.execute(insert_query, list(data.values()))
         self.__connection.commit()
-
-    def insert_data_dynamic_columns(self, table_name: str, data: dict[str, any]):
-        """
-        Вставляет данные в таблицу и добавляет новые атрибуты, если их нет.
-        :param table_name: Название таблицы
-        :param columns: Словарь с данными для вставки (ключ: атрибут, значение: данные)
-        """
-        try:
-            self.__cursor.execute(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}';")
-            existing_columns = {column[0] for column in self.__cursor.fetchall()} # Список существующих столбцов
-
-            new_columns = {col: dtype for col, dtype in data.items()if col not in existing_columns}
-            if new_columns:
-                for column, dtype in new_columns.items():
-                    column_type = determine_column_type(dtype)
-                    alter_query = f"ALTER TABLE {table_name} ADD COLUMN {column} {column_type};"
-                    self.__cursor.execute(alter_query)
-
-            # Вставка данных в таблицу
-            column_str = ', '.join(data.keys())
-            placeholders = ', '.join(['%s'] * len(data))
-            insert_query = f"INSERT INTO {table_name} ({column_str}) VALUES ({placeholders});"
-            self.__cursor.execute(insert_query, list(data.values()))
-            self.__connection.commit()
-
-        except Exception as e:
-            self.__connection.rollback()
-            print(f"Ошибка для добавления данных: {e}")
-        finally:
-            self.__connection.commit()
 
     def add_columns(self, table_name: str, columns: dict[str, any]):
         """

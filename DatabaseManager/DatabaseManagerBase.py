@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 
 class DatabaseManagerBase(ABC):
+
+
+
     """
     Абстрактный базовый класс для работы с базами данных.
     """
@@ -14,10 +17,6 @@ class DatabaseManagerBase(ABC):
 
     @abstractmethod
     def insert_data(self, table_name: str, data: dict[str, any]):
-        pass
-
-    @abstractmethod
-    def insert_data_dynamic_columns(self, table_name: str, data: dict[str, any]):
         pass
 
     @abstractmethod
